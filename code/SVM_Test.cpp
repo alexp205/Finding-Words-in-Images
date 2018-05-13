@@ -3,34 +3,9 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 
-/*
-Tutorial Code:
-
-// Set up SVM for OpenCV 3
-Ptr<SVM> svm = SVM::create();
-// Set SVM type
-svm->setType(SVM::C_SVC);
-// Set SVM Kernel to Radial Basis Function (RBF)
-svm->setKernel(SVM::RBF);
-// Set parameter C
-svm->setC(12.5);
-// Set parameter Gamma
-svm->setGamma(0.50625);
-
-// Train SVM on training data
-Ptr<TrainData> td = TrainData::create(trainData, ROW_SAMPLE, trainLabels);
-svm->train(td);
-
-// Save trained model
-svm->save("digits_svm_model.yml");
-
-// Test on a held out test set
-svm->predict(testMat, testResponse);
-*/
-
 int main()
 {
-	std::cout << L"Welcome to the Amelio SVM demonstration\n\n";
+	std::cout << L"Welcome to the SVM object detector\n\n";
 	std::cout << L"General procedure:\n";
 	std::cout << L"1. Read in picture(s)\n 2. Pre-processing (if necessary)\n 3. Feature extraction\n 4. Training\n\n";
 

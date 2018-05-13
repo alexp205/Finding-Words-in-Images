@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef BASIC_FEATURE_EXTRACTOR_
-#define BASIC_FEATURE_EXTRACTOR_
-
 struct pixel
 {
 	int R;
@@ -25,4 +22,3 @@ private:
 };
 
 double getYellowness(image_data data, int width, int height);
-#endif
