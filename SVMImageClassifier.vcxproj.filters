@@ -15,27 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="code\BasicFeatureExtractor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="code\SVM_mgr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="code\SVM_Test.cpp">
+    <ClCompile Include="code\test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="code\BasicFeatureExtractor.h">
+    <ClInclude Include="code\svm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="code\SVM_mgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="code\SVM_Test.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="code\svm.h">
+    <ClInclude Include="code\test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
