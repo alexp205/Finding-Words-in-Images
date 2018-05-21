@@ -7,6 +7,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/xfeatures2d.hpp>
+#include "svm.h"
 
 struct pixel
 {
@@ -29,5 +30,5 @@ private:
 	int height;
 };
 
-std::wstring setupClassifier(std::wstring train_data_path, std::wstring train_labels_path);
+std::wstring setupClassifier(std::string train_data_path, std::string train_labels_path);
 int classifyImg();

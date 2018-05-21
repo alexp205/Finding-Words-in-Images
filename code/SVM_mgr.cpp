@@ -38,7 +38,7 @@ int image_data::get_width() const
 	return this->width;
 }
 
-std::wstring setupClassifier(std::wstring train_data_path, std::wstring train_labels_path)
+std::wstring setupClassifier(std::string train_data_path, std::string train_labels_path)
 {
     /*
     //EXAMPLE_CODE
@@ -55,16 +55,15 @@ std::wstring setupClassifier(std::wstring train_data_path, std::wstring train_la
     std::vector<cv::KeyPoint> keypts;
     cv::Mat descriptor;
     cv::Mat img_descriptors;
-    
 
     // Step 1: read in images and labels
     std::wcout << L"Reading in picture(s)...\n";
     cv::Mat image;
-    image = cv::imread(image_path, cv::IMREAD_COLOR);
+    image = cv::imread(train_data_path, cv::IMREAD_COLOR);
 
     if (image.empty()) {
         std::wcout << L"invalid input\n";
-        exit(EXIT_FAILURE);
+        return L"fail";
     }
 
     cv::imshow("original image", image);
@@ -80,13 +79,22 @@ std::wstring setupClassifier(std::wstring train_data_path, std::wstring train_la
 
     
     // Step 5: save SVM
+    std::wstring svm_model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier";
 
+
+    return svm_model_path;
 }
 
 int classifyImg()
 {
-    // setup
+    /*
+    //EXAMPLE_CODE
+    //------------
+    const char *error_msg = svm_check_parameter(NULL, NULL);
+    */
 
+    // setup
+    
 
     // Step 1: extract SIFT features
 
@@ -96,5 +104,5 @@ int classifyImg()
 
     // Step 3: use SVM to classify img based on descriptors
 
-    
+    return NULL;
 }

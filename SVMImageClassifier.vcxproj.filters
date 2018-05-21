@@ -21,6 +21,9 @@
     <ClCompile Include="code\test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="code\svm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="code\svm.h">

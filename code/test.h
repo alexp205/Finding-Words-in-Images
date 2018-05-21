@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <codecvt>
 #include "SVM_mgr.h"
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
+
+std::string wstr_to_str(const std::wstring& wstr);
