@@ -2,107 +2,231 @@
 
 image_data::image_data(int width, int height)
 {
-	data = new pixel*[height];
-	for (int i = 0; i < height; i++)
-		data[i] = new pixel[width];
+    data = new pixel*[height];
+    for (int i = 0; i < height; i++)
+        data[i] = new pixel[width];
 
-	this->width = width;
-	this->height = height;
+    this->width = width;
+    this->height = height;
 }
 
 image_data::~image_data()
 {
-	if (data)
-	{
-		for (int i = 0; i < width; i++)
-		{
-			delete[] data[i];
-		}
+    if (data)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            delete[] data[i];
+        }
 
-		delete[] data;
-	}
+        delete[] data;
+    }
 }
 
 pixel** image_data::get_data() const
 {
-	return data;
+    return data;
 }
 
 int image_data::get_height() const
 {
-	return this->height;
+    return this->height;
 }
 
 int image_data::get_width() const
 {
-	return this->width;
+    return this->width;
 }
 
-std::wstring setupClassifier(std::string train_data_path, std::string train_labels_path)
+std::wstring setupClassifier(std::string train_data_path, std::string train_labels_path, int flag)
 {
-    /*
-    //EXAMPLE_CODE
-    //------------
-    cv::Ptr<cv::Feature2D> detector = cv::xfeatures2d::SIFT::create();
-    std::vector<cv::KeyPoint> kpts;
-    detector->detect(temp, kpts);
-    cv::Mat descriptor;
-    detector->compute(temp, kpts, descriptor);
-    */
-
     // setup
-    cv::Mat input;
-    std::vector<cv::KeyPoint> keypts;
-    cv::Mat descriptor;
-    cv::Mat img_descriptors;
+    // image file reading
+    std::vector<std::string> files;
+    DIR *img_dir;
+    struct dirent *img_dir_rdr;
 
+    // image processing and BoF
+    // NOTE: only used if flag == 2
+    cv::Ptr<cv::Feature2D> detector;
+    cv::Mat img_descriptors;
+   
+    // SVM
+    // NOTE: only used if flag == 1
+
+    
     // Step 1: read in images and labels
     std::wcout << L"Reading in picture(s)...\n";
-    cv::Mat image;
-    image = cv::imread(train_data_path, cv::IMREAD_COLOR);
-
-    if (image.empty()) {
-        std::wcout << L"invalid input\n";
+    if (NULL == (img_dir = opendir(train_data_path.c_str()))) {
+        std::wcout << L"error opening image directory\n";
         return L"fail";
     }
 
-    cv::imshow("original image", image);
-    cv::waitKey(0);
+    while (NULL != (img_dir_rdr = readdir(img_dir))) {
+        std::string img_fname = std::string(img_dir_rdr->d_name);
+        if (img_fname.size() > 4) {
 
-    // Step 2: extract SIFT features
+            // DEBUG
+            std::cout << "image filename: " << img_fname << "\n";
+
+            files.push_back(img_fname);
+        }
+    }
+    closedir(img_dir);
+
+    if (2 == flag) detector = cv::xfeatures2d::SIFT::create();
+
+    for (int i = 0; i < files.size(); i++) {
+        std::string img_fpath = train_data_path + "\\" + files[i];
+
+        // DEBUG
+        std::cout << "image filepath: " << img_fpath << "\n";
+
+        cv::Mat img = cv::imread(img_fpath, cv::IMREAD_GRAYSCALE);
+
+        if (img.empty()) {
+            std::wcout << L"invalid input\n";
+            return L"fail";
+        }
+
+        // DEBUG
+        cv::imshow("original image", img);
+        cv::waitKey(0);
+
+        // Step 2:
+        if (2 == flag) {
+            std::vector<cv::KeyPoint> keypts;
+            cv::Mat descriptor;
+
+            // extract SIFT features and get descriptors
+            detector->detect(img, keypts);
+            detector->compute(img, keypts, descriptor);
+            img_descriptors.push_back(descriptor);
+        }
+        else {
+            // --OR--
+            // get features for SVM
+
+        }
+
+        std::wcout << L"Progress = " << ((static_cast<double>(i+1) / static_cast<double>(files.size())) * 100) << L"%\n";
+    }
+
+    std::wstring model_path;
+    if (2 == flag) {
+        // Step 3: train model to recognize descriptors/features
+        int num_bags = 250;
+        cv::TermCriteria tc(cv::TermCriteria::MAX_ITER, 100, 0.001);
+        int retries = 1;
+        int flags = cv::KMEANS_PP_CENTERS;
+
+        cv::BOWKMeansTrainer bof_trainer(num_bags, tc, retries, flags);
+
+        cv::Mat kmeans_dict = bof_trainer.cluster(img_descriptors);
+
+        // Step 4: save model
+        model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
+
+        cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::WRITE);
+        fs << "vocabulary" << kmeans_dict;
+        fs.release();
+    } else {
+        // Step 3: train model to recognize descriptors/features
 
 
-    // Step 3: use features to get descriptors
+        // Step 4: save model
+        model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
+    }
 
-
-    // Step 4: train SVM to recognize descriptors
-
-    
-    // Step 5: save SVM
-    std::wstring svm_model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier";
-
-
-    return svm_model_path;
+    return model_path;
 }
 
-int classifyImg()
+int classifyImg(std::string test_data_path, int flag)
 {
-    /*
-    //EXAMPLE_CODE
-    //------------
-    const char *error_msg = svm_check_parameter(NULL, NULL);
-    */
-
     // setup
+    std::vector<std::string> files;
+    DIR *img_dir;
+    struct dirent *img_dir_rdr;
+
+    // image processing and BoF
+    // NOTE: only used if flag == 2
+    cv::Mat kmeans_dict;
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create();
+    cv::Ptr<cv::FeatureDetector> detector = cv::xfeatures2d::SIFT::create();
+    cv::Ptr<cv::DescriptorExtractor> extractor = cv::xfeatures2d::SIFT::create();
+    cv::BOWImgDescriptorExtractor bof_extractor(extractor, matcher);
+    // NOTE: change this later to display instead of file
+    cv::FileStorage fs_out("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_descriptors.yml", cv::FileStorage::WRITE);
+
+
+    // SVM
+    // NOTE: only used if flag == 1
+
+
+    std::wcout << L"Reading in picture(s)...\n";
+    if (NULL == (img_dir = opendir(test_data_path.c_str()))) {
+        std::wcout << L"error opening image directory\n";
+        return -1;
+    }
+
+    while (NULL != (img_dir_rdr = readdir(img_dir))) {
+        std::string img_fname = std::string(img_dir_rdr->d_name);
+        if (img_fname.size() > 4) {
+
+            // DEBUG
+            std::cout << "image filename: " << img_fname << "\n";
+
+            files.push_back(img_fname);
+        }
+    }
+    closedir(img_dir);
+
+    if (2 == flag) {
+        cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::READ);
+        fs["vocabulary"] >> kmeans_dict;
+        fs.release();
+
+        bof_extractor.setVocabulary(kmeans_dict);
+    }
+
+    for (int i = 0; i < files.size(); i++) {
+        std::string img_fpath = test_data_path + "\\" + files[i];
+
+        // DEBUG
+        std::cout << "image filepath: " << img_fpath << "\n";
+
+        cv::Mat img = cv::imread(img_fpath, cv::IMREAD_GRAYSCALE);
+
+        if (img.empty()) {
+            std::wcout << L"invalid input\n";
+            return -1;
+        }
+
+        // DEBUG
+        cv::imshow("original image", img);
+        cv::waitKey(0);
+
+        if (2 == flag) {
+            std::vector<cv::KeyPoint> keypts;
+            cv::Mat descriptor;
+            
+            // extract SIFT features and classify w/ kmeans
+            detector->detect(img, keypts);
+            bof_extractor.compute(img, keypts, descriptor);
+
+            // NOTE: change this later to display instead of file
+            //fs_out << files[i].c_str() << descriptor << "\n";
+            fs_out << "img" << descriptor;
+
+            //std::cout << "Image Classification (" << files[i] << "): " << descriptor << "\n";
+        }
+        else {
+
+        }
+    }
+
+    // NOTE: change this later to display instead of file
+    if (2 == flag) fs_out.release();
     
-
-    // Step 1: extract SIFT features
-
-
-    // Step 2: use features to get descriptors
-
-
-    // Step 3: use SVM to classify img based on descriptors
-
-    return NULL;
+    return 0;
 }

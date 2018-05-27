@@ -1,8 +1,10 @@
 #include "test.h"
 
 int train_flag = 0;
-std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\tennis_ball.jpg";
-std::wstring train_labels_path = L"";
+int SIFT_flag = 0;
+std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
+std::wstring train_labels_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\labels.csv";
+std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
 
 std::string wstr_to_str(const std::wstring& wstr)
 {
@@ -15,15 +17,24 @@ std::string wstr_to_str(const std::wstring& wstr)
 int main(int argc, char *argv[])
 {
     // process args
-    if (2 != argc) {
-        std::wcerr << L"Usage: SVMImageClassifier [-t train_flag]\n";
-        std::wcerr << L"train_flag only accepts 1 (no training) or 2 (training)" << std::endl;
+    if (3 != argc) {
+        std::wcerr << L"Usage: SVMImageClassifier [-t train_flag] [-s SIFT_flag]\n";
+        std::wcerr << L"train_flag only accepts 1 (no training) or 2 (training)\n";
+        std::wcerr << L"SIFT_flag only accepts 1 (no SIFT) or 2 (SIFT)\n";
+        std::wcerr << L"NOTE: using SIFT does NOT utilize an SVM" << std::endl;
         return -1;
     }
 
     train_flag = atoi(argv[1]);
     if (train_flag < 1 || train_flag > 2) {
         std::wcerr << L"train_flag only accepts 1 (no training) or 2 (training)" << std::endl;
+        return -1;
+    }
+
+    SIFT_flag = atoi(argv[2]);
+    if (SIFT_flag < 1 || SIFT_flag > 2) {
+        std::wcerr << L"SIFT_flag only accepts 1 (no SIFT) or 2 (SIFT)\n";
+        std::wcerr << L"NOTE: using SIFT does NOT utilize an SVM" << std::endl;
         return -1;
     }
 
@@ -37,22 +48,22 @@ int main(int argc, char *argv[])
         
         // Mode 1: offline setup
         // make call to SVM_mgr to run training (*see SVM_mgr.cpp for more info)
-        std::wcout << L"Running training procedure...\n";
-        std::wstring svm_model_path = setupClassifier(wstr_to_str(train_data_path), wstr_to_str(train_labels_path));
-        if (svm_model_path.compare(L"fail") == 0) {
+        std::wcout << L"\nRunning training procedure...\n";
+        std::wstring model_path = setupClassifier(wstr_to_str(train_data_path), wstr_to_str(train_labels_path), SIFT_flag);
+        if ((0 == model_path.compare(L"fail")) || model_path.empty()) {
             std::wcerr << L"Training failed" << std::endl;
             return -1;
         }
 
         std::wcout << L"Training completed, the trained SVM model file can be found at:\n";
-        std::wcout << svm_model_path << "\n";
+        std::wcout << model_path << "\n";
     } else {
         std::wcout << L"train_flag NOT set, running classification version of program\n";
 
         // Mode 2: online classification
         // make call to SVM_mgr to classify image
-        std::wcout << L"Running classification procedure...\n";
-        int success = classifyImg();
+        std::wcout << L"\nRunning classification procedure...\n";
+        int success = classifyImg(wstr_to_str(test_data_path), SIFT_flag);
         if (0 != success) {
             std::wcerr << L"Classification failed" << std::endl;
             return -1;

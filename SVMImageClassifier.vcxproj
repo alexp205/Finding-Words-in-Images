@@ -132,6 +132,7 @@
     <ClCompile Include="code\test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="code\dirent.h" />
     <ClInclude Include="code\SVM_mgr.h" />
     <ClInclude Include="code\svm.h" />
     <ClInclude Include="code\test.h" />
