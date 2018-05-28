@@ -1,23 +1,20 @@
 #include "test.h"
 
 int train_flag = 0;
+//std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images";
 std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
-std::wstring train_labels_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\labels.csv";
+//std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images";
 std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
+//std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\train_labels.csv";
+std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\labels.csv";
 std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
-
-std::string wstr_to_str(const std::wstring& wstr)
-{
-    using convert_type = std::codecvt_utf8<wchar_t>;
-    std::wstring_convert<convert_type, wchar_t> converter;
-
-    return converter.to_bytes(wstr);
-}
+std::wstring dict_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
+std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
 
 int main(int argc, char *argv[])
 {
     // process args
-    if (3 != argc) {
+    if (2 != argc) {
         std::wcerr << L"Usage: SVMImageClassifier [-t train_flag]\n";
         std::wcerr << L"train_flag only accepts 1 (no training) or 2 (training)\n";
         return -1;
@@ -31,7 +28,7 @@ int main(int argc, char *argv[])
 
 	std::wcout << L"SVM object detector with SIFT and BoF\n\n";
     std::wcout << L"Scanning for training data at: " << train_data_path << "\n";
-    std::wcout << L"Scanning for training labels at: " << train_labels_path << "\n";
+    std::wcout << L"Scanning for training labels at: " << image_dir_labels << "\n";
 	
     // run main procedure
     switch (train_flag) {
@@ -42,8 +39,8 @@ int main(int argc, char *argv[])
             // Mode 1: offline setup
             // make call to SVM_mgr to run kmeans training (*see SVM_mgr.cpp for more info)
             std::wcout << L"\nRunning generation procedure...\n";
-            std::wstring dict_path = getTargetDescriptors(wstr_to_str(train_data_path), wstr_to_str(train_labels_path));
-            if ((0 == dict_path.compare(L"fail")) || dict_path.empty()) {
+            int success = getTargetMap(wstr_to_str(train_data_path), wstr_to_str(dict_path));
+            if (0 != success) {
                 std::wcerr << L"Descriptor dict generation failed" << std::endl;
                 return -1;
             }
@@ -60,8 +57,8 @@ int main(int argc, char *argv[])
             // Mode 2: SVM training
             // make call to SVM_mgr to run SVM training
             std::wcout << L"\nRunning training procedure...\n";
-            std::wstring model_path = trainSVM(wstr_to_str(image_dir_path));
-            if ((0 == model_path.compare(L"fail")) || model_path.empty()) {
+            int success = trainSVM(wstr_to_str(image_dir_path), wstr_to_str(image_dir_labels), wstr_to_str(dict_path), wstr_to_str(model_path));
+            if (0 != success) {
                 std::wcerr << L"SVM training failed" << std::endl;
                 return -1;
             }
@@ -78,17 +75,18 @@ int main(int argc, char *argv[])
             // Mode 2: SVM training
             // make call to SVM_mgr to run SVM training
             std::wcout << L"\nRunning classification procedure...\n";
-            std::vector<int> classes = classifyImage(wstr_to_str(test_data_path));
+            std::vector<double> classes = classifyImages(wstr_to_str(test_data_path), wstr_to_str(dict_path), wstr_to_str(model_path));
             if (classes.empty()) {
                 std::wcerr << L"Classification failed" << std::endl;
                 return -1;
             }
 
+            std::wcout << L"NOTE: 1 = tennis ball detected, 0 = not\n";
             std::wcout << L"SVM image classification completed with the following identifications:\n";
             int count = 0;
             for (int i = 0; i < classes.size(); i++) {
                 std::wcout << classes[i] << L"\n";
-                if (1 == classes[i]) count++;
+                if (1.0 == classes[i]) count++;
             }
             std::wcout << L"Overall tennis ball images identified: " << count << L"\n";
             std::wcout << L"Overall tennis ball identification fraction: " << ((static_cast<double>(count + 1) / static_cast<double>(classes.size())) * 100) << L"\n";

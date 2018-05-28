@@ -38,7 +38,15 @@ int image_data::get_width() const
     return this->width;
 }
 
-std::wstring getTargetDescriptors(std::string train_data_path, std::string train_labels_path)
+std::string wstr_to_str(const std::wstring& wstr)
+{
+    using convert_type = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_type, wchar_t> converter;
+
+    return converter.to_bytes(wstr);
+}
+
+int getTargetMap(std::string train_data_path, std::string dict_path)
 {
     // setup
     // image file reading
@@ -54,7 +62,7 @@ std::wstring getTargetDescriptors(std::string train_data_path, std::string train
     std::wcout << L"Reading in picture(s)...\n";
     if (NULL == (img_dir = opendir(train_data_path.c_str()))) {
         std::wcout << L"error opening image directory\n";
-        return L"fail";
+        return -1;
     }
 
     while (NULL != (img_dir_rdr = readdir(img_dir))) {
@@ -81,7 +89,7 @@ std::wstring getTargetDescriptors(std::string train_data_path, std::string train
 
         if (img.empty()) {
             std::wcout << L"invalid input\n";
-            return L"fail";
+            return -1;
         }
 
         // DEBUG
@@ -111,21 +119,20 @@ std::wstring getTargetDescriptors(std::string train_data_path, std::string train
     cv::Mat kmeans_dict = bof_trainer.cluster(img_descriptors);
 
     // Step 4: save model
-    cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::WRITE);
+    cv::FileStorage fs(dict_path.c_str(), cv::FileStorage::WRITE);
     fs << "vocabulary" << kmeans_dict;
     fs.release();
     
-    std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
-
-    return model_path;
+    return 0;
 }
 
-std::wstring trainSVM(std::string image_dir_path)
+std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std::string dict_path)
 {
     // setup
     std::vector<std::string> files;
     DIR *img_dir;
     struct dirent *img_dir_rdr;
+    std::vector<std::vector<double>> descriptors;
 
     // image processing and BoF
     cv::Mat kmeans_dict;
@@ -133,17 +140,12 @@ std::wstring trainSVM(std::string image_dir_path)
     cv::Ptr<cv::FeatureDetector> detector = cv::xfeatures2d::SIFT::create();
     cv::Ptr<cv::DescriptorExtractor> extractor = cv::xfeatures2d::SIFT::create();
     cv::BOWImgDescriptorExtractor bof_extractor(extractor, matcher);
-    // NOTE: change this later to display instead of file
     cv::FileStorage fs_out("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_descriptors.yml", cv::FileStorage::WRITE);
-
-
-    // SVM
-
 
     std::wcout << L"Reading in picture(s)...\n";
     if (NULL == (img_dir = opendir(image_dir_path.c_str()))) {
         std::wcout << L"error opening image directory\n";
-        return L"fail";
+        return descriptors;
     }
 
     while (NULL != (img_dir_rdr = readdir(img_dir))) {
@@ -158,7 +160,7 @@ std::wstring trainSVM(std::string image_dir_path)
     }
     closedir(img_dir);
 
-    cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::READ);
+    cv::FileStorage fs(dict_path.c_str(), cv::FileStorage::READ);
     fs["vocabulary"] >> kmeans_dict;
     fs.release();
 
@@ -174,7 +176,7 @@ std::wstring trainSVM(std::string image_dir_path)
 
         if (img.empty()) {
             std::wcout << L"invalid input\n";
-            return L"fail";
+            return descriptors;
         }
 
         // DEBUG
@@ -183,31 +185,156 @@ std::wstring trainSVM(std::string image_dir_path)
 
         std::vector<cv::KeyPoint> keypts;
         cv::Mat descriptor;
-            
+
         // extract SIFT features and classify w/ kmeans
         detector->detect(img, keypts);
         bof_extractor.compute(img, keypts, descriptor);
 
-        // NOTE: change this later
-        //fs_out << files[i].c_str() << descriptor << "\n";
+        std::vector<double> img_descriptor;
+        int rows = descriptor.rows;
+        int cols = descriptor.cols;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                img_descriptor.push_back(descriptor.at<float>(r, c));
+            }
+        }
         fs_out << "img" << descriptor;
+        descriptors.push_back(img_descriptor);
 
-        //std::cout << "Image Classification (" << files[i] << "): " << descriptor << "\n";
+        // DEBUG
+        std::wcout << L"image descriptor size: " << img_descriptor.size() << "\n";
     }
 
-    // NOTE: change this later
     fs_out.release();
 
-    std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
-    
-    return model_path;
+    // DEBUG
+    std::wcout << L"image descriptors size: " << descriptors.size() << "\n";
+
+    return descriptors;
+
 }
 
-std::vector<int> classifyImage(std::string test_data_path)
+int trainSVM(std::string image_dir_path, std::string train_labels_path, std::string dict_path, std::string model_path)
 {
-    std::vector<int> classes;
+    // setup
+    std::vector<std::vector<double>> img_descriptors;
+    struct svm_problem prob;
+    struct svm_parameter param;
+    struct svm_model *model;
 
+    img_descriptors = getDescriptors(image_dir_path, dict_path);
 
+    // preprocess data
+    prob.l = img_descriptors.size();
+    prob.x = (struct svm_node**)malloc(sizeof(struct svm_node*) * prob.l);
+    for (int i = 0; i < prob.l; i++) {
+        prob.x[i] = (struct svm_node*)malloc(sizeof(struct svm_node) * (img_descriptors[0].size() + 1));
+    }
+    prob.y = (double*)malloc(sizeof(double) * prob.l);
+
+    std::ifstream labels_file(train_labels_path);
+    std::string label_str;
+    int idx = 0;
+    while (std::getline(labels_file, label_str)) {
+        prob.y[idx] = std::stoi(label_str, nullptr);
+        idx++;
+    }
+    labels_file.close();
+
+    int rows = img_descriptors.size();
+    int cols = img_descriptors[0].size();
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            struct svm_node data;
+            data.index = c;
+            data.value = img_descriptors[r][c];
+            prob.x[r][c] = data;
+        }
+        struct svm_node end_data;
+        end_data.index = -1;
+        end_data.value = 0.0;
+        prob.x[r][cols] = end_data;
+    }
+
+    param.svm_type = C_SVC;
+    param.kernel_type = RBF;
+    param.degree = 3;
+    param.gamma = 0.1;
+    param.coef0 = 0;
+    param.nu = 0.5;
+    param.cache_size = 100;
+    param.C = 0.0001;
+    param.eps = 1e-3;
+    param.p = 0.1;
+    param.shrinking = 1;
+    param.probability = 0;
+    param.nr_weight = 0;
+    param.weight_label = NULL;
+    param.weight = NULL;
+
+    // train SVM
+    const char *error_msg = svm_check_parameter(&prob, &param);
+    if (error_msg) {
+        std::cerr << "Error in svm params: " << error_msg << "\n";
+        return -1;
+    }
+
+    model = svm_train(&prob, &param);
+    int success = svm_save_model(model_path.c_str(), model);
+    if (success) {
+        std::wcerr << L"Error in saving model to file\n";
+        return -1;
+    }
+    svm_free_and_destroy_model(&model);
+
+    // clean up
+    svm_destroy_param(&param);
+    free(prob.y);
+    for (int i = 0; i < prob.l; i++) {
+        free(prob.x[i]);
+    }
+    free(prob.x);
+
+    return 0;
+}
+
+std::vector<double> classifyImages(std::string test_data_path, std::string dict_path, std::string model_path)
+{
+    std::vector<std::vector<double>> img_descriptors;
+    std::vector<double> classes;
+    struct svm_model *model;
+
+    int id_size = img_descriptors.size();
+    img_descriptors = getDescriptors(test_data_path, dict_path);
+
+    model = svm_load_model(model_path.c_str());
+    if (0 == model) {
+        std::wcerr << L"Error loading SVM model\n";
+        return classes;
+    }
+
+    struct svm_node *data = (struct svm_node*)malloc(sizeof(struct svm_node) * (img_descriptors[0].size() + 1));
+
+    int cols = img_descriptors.size();
+    for (int img = 0; img < cols; img++) {
+        for (int c = 0; c < img_descriptors[0].size(); c++) {
+            struct svm_node img_data;
+            img_data.index = c;
+            img_data.value = img_descriptors[img][c];
+            data[c] = img_data;
+        }
+        struct svm_node end_data;
+        end_data.index = -1;
+        end_data.value = 0.0;
+        data[cols] = end_data;
+
+        double prediction = svm_predict(model, data);
+        classes.push_back(prediction);
+    }
+
+    // clean up
+    svm_free_and_destroy_model(&model);
+    free(data);
 
     return classes;
 }
