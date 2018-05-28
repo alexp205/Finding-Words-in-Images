@@ -38,7 +38,7 @@ int image_data::get_width() const
     return this->width;
 }
 
-std::wstring setupClassifier(std::string train_data_path, std::string train_labels_path, int flag)
+std::wstring getTargetDescriptors(std::string train_data_path, std::string train_labels_path)
 {
     // setup
     // image file reading
@@ -47,14 +47,9 @@ std::wstring setupClassifier(std::string train_data_path, std::string train_labe
     struct dirent *img_dir_rdr;
 
     // image processing and BoF
-    // NOTE: only used if flag == 2
     cv::Ptr<cv::Feature2D> detector;
     cv::Mat img_descriptors;
    
-    // SVM
-    // NOTE: only used if flag == 1
-
-    
     // Step 1: read in images and labels
     std::wcout << L"Reading in picture(s)...\n";
     if (NULL == (img_dir = opendir(train_data_path.c_str()))) {
@@ -74,7 +69,7 @@ std::wstring setupClassifier(std::string train_data_path, std::string train_labe
     }
     closedir(img_dir);
 
-    if (2 == flag) detector = cv::xfeatures2d::SIFT::create();
+    detector = cv::xfeatures2d::SIFT::create();
 
     for (int i = 0; i < files.size(); i++) {
         std::string img_fpath = train_data_path + "\\" + files[i];
@@ -94,54 +89,38 @@ std::wstring setupClassifier(std::string train_data_path, std::string train_labe
         cv::waitKey(0);
 
         // Step 2:
-        if (2 == flag) {
-            std::vector<cv::KeyPoint> keypts;
-            cv::Mat descriptor;
+        std::vector<cv::KeyPoint> keypts;
+        cv::Mat descriptor;
 
-            // extract SIFT features and get descriptors
-            detector->detect(img, keypts);
-            detector->compute(img, keypts, descriptor);
-            img_descriptors.push_back(descriptor);
-        }
-        else {
-            // --OR--
-            // get features for SVM
-
-        }
+        // extract SIFT features and get descriptors
+        detector->detect(img, keypts);
+        detector->compute(img, keypts, descriptor);
+        img_descriptors.push_back(descriptor);
 
         std::wcout << L"Progress = " << ((static_cast<double>(i+1) / static_cast<double>(files.size())) * 100) << L"%\n";
     }
 
-    std::wstring model_path;
-    if (2 == flag) {
-        // Step 3: train model to recognize descriptors/features
-        int num_bags = 250;
-        cv::TermCriteria tc(cv::TermCriteria::MAX_ITER, 100, 0.001);
-        int retries = 1;
-        int flags = cv::KMEANS_PP_CENTERS;
+    // Step 3: train model to recognize descriptors/features
+    int num_bags = 250;
+    cv::TermCriteria tc(cv::TermCriteria::MAX_ITER, 100, 0.001);
+    int retries = 1;
+    int flags = cv::KMEANS_PP_CENTERS;
 
-        cv::BOWKMeansTrainer bof_trainer(num_bags, tc, retries, flags);
+    cv::BOWKMeansTrainer bof_trainer(num_bags, tc, retries, flags);
 
-        cv::Mat kmeans_dict = bof_trainer.cluster(img_descriptors);
+    cv::Mat kmeans_dict = bof_trainer.cluster(img_descriptors);
 
-        // Step 4: save model
-        model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
-
-        cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::WRITE);
-        fs << "vocabulary" << kmeans_dict;
-        fs.release();
-    } else {
-        // Step 3: train model to recognize descriptors/features
-
-
-        // Step 4: save model
-        model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
-    }
+    // Step 4: save model
+    cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::WRITE);
+    fs << "vocabulary" << kmeans_dict;
+    fs.release();
+    
+    std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
 
     return model_path;
 }
 
-int classifyImg(std::string test_data_path, int flag)
+std::wstring trainSVM(std::string image_dir_path)
 {
     // setup
     std::vector<std::string> files;
@@ -149,7 +128,6 @@ int classifyImg(std::string test_data_path, int flag)
     struct dirent *img_dir_rdr;
 
     // image processing and BoF
-    // NOTE: only used if flag == 2
     cv::Mat kmeans_dict;
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create();
     cv::Ptr<cv::FeatureDetector> detector = cv::xfeatures2d::SIFT::create();
@@ -160,13 +138,12 @@ int classifyImg(std::string test_data_path, int flag)
 
 
     // SVM
-    // NOTE: only used if flag == 1
 
 
     std::wcout << L"Reading in picture(s)...\n";
-    if (NULL == (img_dir = opendir(test_data_path.c_str()))) {
+    if (NULL == (img_dir = opendir(image_dir_path.c_str()))) {
         std::wcout << L"error opening image directory\n";
-        return -1;
+        return L"fail";
     }
 
     while (NULL != (img_dir_rdr = readdir(img_dir))) {
@@ -181,16 +158,14 @@ int classifyImg(std::string test_data_path, int flag)
     }
     closedir(img_dir);
 
-    if (2 == flag) {
-        cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::READ);
-        fs["vocabulary"] >> kmeans_dict;
-        fs.release();
+    cv::FileStorage fs("C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml", cv::FileStorage::READ);
+    fs["vocabulary"] >> kmeans_dict;
+    fs.release();
 
-        bof_extractor.setVocabulary(kmeans_dict);
-    }
+    bof_extractor.setVocabulary(kmeans_dict);
 
     for (int i = 0; i < files.size(); i++) {
-        std::string img_fpath = test_data_path + "\\" + files[i];
+        std::string img_fpath = image_dir_path + "\\" + files[i];
 
         // DEBUG
         std::cout << "image filepath: " << img_fpath << "\n";
@@ -199,34 +174,40 @@ int classifyImg(std::string test_data_path, int flag)
 
         if (img.empty()) {
             std::wcout << L"invalid input\n";
-            return -1;
+            return L"fail";
         }
 
         // DEBUG
         cv::imshow("original image", img);
         cv::waitKey(0);
 
-        if (2 == flag) {
-            std::vector<cv::KeyPoint> keypts;
-            cv::Mat descriptor;
+        std::vector<cv::KeyPoint> keypts;
+        cv::Mat descriptor;
             
-            // extract SIFT features and classify w/ kmeans
-            detector->detect(img, keypts);
-            bof_extractor.compute(img, keypts, descriptor);
+        // extract SIFT features and classify w/ kmeans
+        detector->detect(img, keypts);
+        bof_extractor.compute(img, keypts, descriptor);
 
-            // NOTE: change this later to display instead of file
-            //fs_out << files[i].c_str() << descriptor << "\n";
-            fs_out << "img" << descriptor;
+        // NOTE: change this later
+        //fs_out << files[i].c_str() << descriptor << "\n";
+        fs_out << "img" << descriptor;
 
-            //std::cout << "Image Classification (" << files[i] << "): " << descriptor << "\n";
-        }
-        else {
-
-        }
+        //std::cout << "Image Classification (" << files[i] << "): " << descriptor << "\n";
     }
 
-    // NOTE: change this later to display instead of file
-    if (2 == flag) fs_out.release();
+    // NOTE: change this later
+    fs_out.release();
+
+    std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
     
-    return 0;
+    return model_path;
+}
+
+std::vector<int> classifyImage(std::string test_data_path)
+{
+    std::vector<int> classes;
+
+
+
+    return classes;
 }

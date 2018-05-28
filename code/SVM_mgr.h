@@ -31,5 +31,6 @@ private:
 	int height;
 };
 
-std::wstring setupClassifier(std::string train_data_path, std::string train_labels_path, int flag);
-int classifyImg(std::string test_data_path, int flag);
+std::wstring getTargetDescriptors(std::string train_data_path, std::string train_labels_path);
+std::wstring trainSVM(std::string image_dir_path);
+std::vector<int> classifyImage(std::string test_data_path);
