@@ -1,13 +1,14 @@
 #include "test.h"
 
 int train_flag = 0;
-//std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images";
-std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
-//std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images";
-std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
-//std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\train_labels.csv";
-std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\labels.csv";
-std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
+std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images\\train";
+//std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
+std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images\\train";
+//std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
+std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\train_labels_svm.csv";
+//std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\labels.csv";
+std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images\\test";
+//std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images_test";
 std::wstring dict_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
 std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
 
@@ -16,19 +17,20 @@ int main(int argc, char *argv[])
     // process args
     if (2 != argc) {
         std::wcerr << L"Usage: SVMImageClassifier [-t train_flag]\n";
-        std::wcerr << L"train_flag only accepts 1 (no training) or 2 (training)\n";
+        std::wcerr << L"train_flag only accepts 1 (generate dictionaries), 2 (train SVM), or 3 (classify images)\n";
         return -1;
     }
 
     train_flag = atoi(argv[1]);
     if (train_flag < 1 || train_flag > 3) {
-        std::wcerr << L"train_flag only accepts 1 (no training) or 2 (training)" << std::endl;
+        std::wcerr << L"train_flag only accepts 1 (generate dictionaries), 2 (train SVM), or 3 (classify images)" << std::endl;
         return -1;
     }
 
 	std::wcout << L"SVM object detector with SIFT and BoF\n\n";
     std::wcout << L"Scanning for training data at: " << train_data_path << "\n";
     std::wcout << L"Scanning for training labels at: " << image_dir_labels << "\n";
+    std::wcout << L"Scanning for testing data at: " << test_data_path << "\n";
 	
     // run main procedure
     switch (train_flag) {
@@ -85,11 +87,11 @@ int main(int argc, char *argv[])
             std::wcout << L"SVM image classification completed with the following identifications:\n";
             int count = 0;
             for (int i = 0; i < classes.size(); i++) {
-                std::wcout << classes[i] << L"\n";
+                std::wcout << L"image " << i+1 << L": " << classes[i] << L"\n";
                 if (1.0 == classes[i]) count++;
             }
             std::wcout << L"Overall tennis ball images identified: " << count << L"\n";
-            std::wcout << L"Overall tennis ball identification fraction: " << ((static_cast<double>(count + 1) / static_cast<double>(classes.size())) * 100) << L"\n";
+            std::wcout << L"Overall tennis ball identification fraction: " << ((static_cast<double>(count) / static_cast<double>(classes.size())) * 100) << L"\n";
 
             break;
             } 

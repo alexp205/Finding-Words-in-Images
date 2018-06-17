@@ -12,27 +12,6 @@
 #include "svm.h"
 #include "dirent.h"
 
-struct pixel
-{
-	int R;
-	int G;
-	int B;
-};
-
-class image_data
-{
-public:
-	image_data(int width, int height);
-	~image_data();
-	pixel** get_data() const;
-	int get_width() const;
-	int get_height() const;
-private:
-	pixel** data = nullptr;
-	int width;
-	int height;
-};
-
 std::string wstr_to_str(const std::wstring& wstr);
 int getTargetMap(std::string train_data_path, std::string dict_path);
 std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std::string dict_path);

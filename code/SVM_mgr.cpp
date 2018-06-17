@@ -1,43 +1,5 @@
 #include "SVM_mgr.h"
 
-image_data::image_data(int width, int height)
-{
-    data = new pixel*[height];
-    for (int i = 0; i < height; i++)
-        data[i] = new pixel[width];
-
-    this->width = width;
-    this->height = height;
-}
-
-image_data::~image_data()
-{
-    if (data)
-    {
-        for (int i = 0; i < width; i++)
-        {
-            delete[] data[i];
-        }
-
-        delete[] data;
-    }
-}
-
-pixel** image_data::get_data() const
-{
-    return data;
-}
-
-int image_data::get_height() const
-{
-    return this->height;
-}
-
-int image_data::get_width() const
-{
-    return this->width;
-}
-
 std::string wstr_to_str(const std::wstring& wstr)
 {
     using convert_type = std::codecvt_utf8<wchar_t>;
@@ -93,8 +55,8 @@ int getTargetMap(std::string train_data_path, std::string dict_path)
         }
 
         // DEBUG
-        cv::imshow("original image", img);
-        cv::waitKey(0);
+        //cv::imshow("image", img);
+        //cv::waitKey(0);
 
         // Step 2:
         std::vector<cv::KeyPoint> keypts;
@@ -180,8 +142,8 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
         }
 
         // DEBUG
-        cv::imshow("original image", img);
-        cv::waitKey(0);
+        //cv::imshow("image", img);
+        //cv::waitKey(0);
 
         std::vector<cv::KeyPoint> keypts;
         cv::Mat descriptor;
@@ -203,6 +165,8 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
 
         // DEBUG
         std::wcout << L"image descriptor size: " << img_descriptor.size() << "\n";
+
+        std::wcout << L"Progress = " << ((static_cast<double>(i + 1) / static_cast<double>(files.size())) * 100) << L"%\n";
     }
 
     fs_out.release();
@@ -233,9 +197,17 @@ int trainSVM(std::string image_dir_path, std::string train_labels_path, std::str
     prob.y = (double*)malloc(sizeof(double) * prob.l);
 
     std::ifstream labels_file(train_labels_path);
+    if (labels_file.fail()) {
+        std::wcout << L"training labels file does not exist\n";
+        return -1;
+    }
     std::string label_str;
     int idx = 0;
     while (std::getline(labels_file, label_str)) {
+
+        // DEBUG
+        //std::cout << "label: " << label_str << "\n";
+
         prob.y[idx] = std::stoi(label_str, nullptr);
         idx++;
     }
@@ -281,7 +253,7 @@ int trainSVM(std::string image_dir_path, std::string train_labels_path, std::str
 
     model = svm_train(&prob, &param);
     int success = svm_save_model(model_path.c_str(), model);
-    if (success) {
+    if (0 != success) {
         std::wcerr << L"Error in saving model to file\n";
         return -1;
     }
