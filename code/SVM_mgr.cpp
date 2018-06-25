@@ -60,18 +60,25 @@ int getTargetMap(std::string train_data_path, std::string dict_path)
 
         // Step 2:
         std::vector<cv::KeyPoint> keypts;
-        cv::Mat descriptor;
+        cv::Mat descriptor_set;
 
         // extract SIFT features and get descriptors
         detector->detect(img, keypts);
-        detector->compute(img, keypts, descriptor);
-        img_descriptors.push_back(descriptor);
+        detector->compute(img, keypts, descriptor_set);
+        img_descriptors.push_back(descriptor_set);
+
+        // DEBUG
+        /*cv::Mat descriptor_img;
+        cv::drawKeypoints(img, keypts, descriptor_img, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        cv::imshow("image", descriptor_img);
+        cv::waitKey(0);
+        cv::destroyWindow("image");*/
 
         std::wcout << L"Progress = " << ((static_cast<double>(i+1) / static_cast<double>(files.size())) * 100) << L"%\n";
     }
 
     // Step 3: train model to recognize descriptors/features
-    int num_bags = 250;
+    int num_bags = 500;
     cv::TermCriteria tc(cv::TermCriteria::MAX_ITER, 100, 0.001);
     int retries = 1;
     int flags = cv::KMEANS_PP_CENTERS;
@@ -122,11 +129,21 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
     }
     closedir(img_dir);
 
+    // set vocabulary
     cv::FileStorage fs(dict_path.c_str(), cv::FileStorage::READ);
     fs["vocabulary"] >> kmeans_dict;
     fs.release();
 
     bof_extractor.setVocabulary(kmeans_dict);
+
+    // DEBUG
+    std::string match_img_fpath = "C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\match_img.jpg";
+    std::vector<cv::KeyPoint> match_keypts;
+    cv::Mat match_descriptor_set;
+    cv::Mat match_img = cv::imread(match_img_fpath, cv::IMREAD_GRAYSCALE);
+    detector->detect(match_img, match_keypts);
+    //detector->compute(match_img, match_keypts, match_descriptor_set);
+    bof_extractor.compute(match_img, match_keypts, match_descriptor_set);
 
     for (int i = 0; i < files.size(); i++) {
         std::string img_fpath = image_dir_path + "\\" + files[i];
@@ -146,25 +163,39 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
         //cv::waitKey(0);
 
         std::vector<cv::KeyPoint> keypts;
-        cv::Mat descriptor;
+        cv::Mat descriptor_set;
 
-        // extract SIFT features and classify w/ kmeans
+        // extract SIFT features and match w/ vocabulary
         detector->detect(img, keypts);
-        bof_extractor.compute(img, keypts, descriptor);
+        //detector->compute(img, keypts, descriptor_set);
+        bof_extractor.compute(img, keypts, descriptor_set);
 
         std::vector<double> img_descriptor;
-        int rows = descriptor.rows;
-        int cols = descriptor.cols;
+        int rows = descriptor_set.rows;
+        int cols = descriptor_set.cols;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                img_descriptor.push_back(descriptor.at<float>(r, c));
+                img_descriptor.push_back(descriptor_set.at<float>(r, c));
             }
         }
-        fs_out << "img" << descriptor;
+        fs_out << "img" << descriptor_set;
         descriptors.push_back(img_descriptor);
 
         // DEBUG
-        std::wcout << L"image descriptor size: " << img_descriptor.size() << "\n";
+       /* std::wcout << L"image descriptor_set size: " << img_descriptor.size() << "\n";
+        std::vector<std::vector<cv::DMatch>> matches;
+        matcher->knnMatch(descriptor_set, match_descriptor_set, matches, 2);
+        std::vector<cv::DMatch> good_matches;
+        for (int i = 0; i < matches.size(); i++) {
+            if (matches[i][0].distance < (0.75 * matches[i][1].distance)) {
+                good_matches.push_back(matches[i][0]);
+            }
+        }
+        cv::Mat good_matches_img;
+        cv::drawMatches(img, keypts, match_img, match_keypts, good_matches, good_matches_img);
+        cv::imshow("good matches image", good_matches_img);
+        cv::waitKey(0);
+        cv::destroyWindow("good matches image");*/
 
         std::wcout << L"Progress = " << ((static_cast<double>(i + 1) / static_cast<double>(files.size())) * 100) << L"%\n";
     }
@@ -246,7 +277,7 @@ int trainSVM(std::string image_dir_path, std::string train_labels_path, std::str
 
     // train SVM
     const char *error_msg = svm_check_parameter(&prob, &param);
-    if (error_msg) {
+    if (NULL != error_msg) {
         std::cerr << "Error in svm params: " << error_msg << "\n";
         return -1;
     }

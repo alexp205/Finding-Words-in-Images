@@ -1,16 +1,16 @@
 #include "test.h"
 
 int train_flag = 0;
-std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images\\train";
-//std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
-std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images\\train";
-//std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images";
-std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\train_labels_svm.csv";
-//std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\labels.csv";
-std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\VideoObjectDetector\\SelfTrainedModel\\Data\\Images\\test";
-//std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\tb_test_images_test";
+//std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\VisionSubsystem\\Training Data\\tennis-ball-dataset\\less_noise_pics";
+std::wstring train_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\train_dict_temp";
+//std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\temp_data\\alex-training-data";
+std::wstring image_dir_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\train_svm_temp";
+//std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\temp_data\\train-labels.csv";
+std::wstring image_dir_labels = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\train_labels_svm_temp.csv";
+std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\test";
+
 std::wstring dict_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
-std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model.txt";
+std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model";
 
 int main(int argc, char *argv[])
 {
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     }
 
 	std::wcout << L"SVM object detector with SIFT and BoF\n\n";
-    std::wcout << L"Scanning for training data at: " << train_data_path << "\n";
+    std::wcout << L"Scanning for training data at: " << image_dir_path << "\n";
     std::wcout << L"Scanning for training labels at: " << image_dir_labels << "\n";
     std::wcout << L"Scanning for testing data at: " << test_data_path << "\n";
 	
