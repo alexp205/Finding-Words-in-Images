@@ -142,8 +142,8 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
     cv::Mat match_descriptor_set;
     cv::Mat match_img = cv::imread(match_img_fpath, cv::IMREAD_GRAYSCALE);
     detector->detect(match_img, match_keypts);
-    //detector->compute(match_img, match_keypts, match_descriptor_set);
-    bof_extractor.compute(match_img, match_keypts, match_descriptor_set);
+    detector->compute(match_img, match_keypts, match_descriptor_set);
+    //bof_extractor.compute(match_img, match_keypts, match_descriptor_set);
 
     for (int i = 0; i < files.size(); i++) {
         std::string img_fpath = image_dir_path + "\\" + files[i];
@@ -167,8 +167,8 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
 
         // extract SIFT features and match w/ vocabulary
         detector->detect(img, keypts);
-        //detector->compute(img, keypts, descriptor_set);
-        bof_extractor.compute(img, keypts, descriptor_set);
+        detector->compute(img, keypts, descriptor_set);
+        //bof_extractor.compute(img, keypts, descriptor_set);
 
         std::vector<double> img_descriptor;
         int rows = descriptor_set.rows;
@@ -182,7 +182,7 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
         descriptors.push_back(img_descriptor);
 
         // DEBUG
-       /* std::wcout << L"image descriptor_set size: " << img_descriptor.size() << "\n";
+        std::wcout << L"image descriptor_set size: " << img_descriptor.size() << "\n";
         std::vector<std::vector<cv::DMatch>> matches;
         matcher->knnMatch(descriptor_set, match_descriptor_set, matches, 2);
         std::vector<cv::DMatch> good_matches;
@@ -195,7 +195,7 @@ std::vector<std::vector<double>> getDescriptors(std::string image_dir_path, std:
         cv::drawMatches(img, keypts, match_img, match_keypts, good_matches, good_matches_img);
         cv::imshow("good matches image", good_matches_img);
         cv::waitKey(0);
-        cv::destroyWindow("good matches image");*/
+        cv::destroyWindow("good matches image");
 
         std::wcout << L"Progress = " << ((static_cast<double>(i + 1) / static_cast<double>(files.size())) * 100) << L"%\n";
     }
