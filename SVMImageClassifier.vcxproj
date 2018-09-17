@@ -110,7 +110,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Users\ap\Documents\Libraries\opencv_cpp\build_opencv\install\x64\vc15</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world331d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

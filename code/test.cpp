@@ -2,16 +2,20 @@
 
 int train_flag = 0;
 /*
-std::wstring vocab_data_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\VisionSubsystem\\Training Data\\tennis-ball-dataset\\less_noise_pics";
-std::wstring vocab_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\train_dict_temp";
-std::wstring svm_train_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\temp_data\\alex-training-data";
-std::wstring svm_train_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\train_svm_temp";
-std::wstring svm_train_labels_path = L"C:\\Users\\ap\\Documents\\School\\Undergraduate\\Robotics\\Autonomy\\Projects\\VisionSubsystem\\temp_data\\train-labels.csv";
-std::wstring svm_train_labels_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\train_labels_svm_temp.csv";
-std::wstring test_data_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\resources\\SVMImageClassifier\\test";
+for DEBUG:
+C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_dict_temp
+C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_svm_temp
+C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_labels_svm_temp.csv
 
-std::wstring dict_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\kmeans_dict.yml";
-std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SVMImageClassifier\\svm_model";
+for FINAL:
+C:\Users\ap\Documents\Projects\Programs\Tutorials\google_ml_videos\RelatedTutorials\tensorflow-for-poets-2\tf_files\flower_photos\all
+C:\Users\ap\Documents\Projects\Programs\Tutorials\google_ml_videos\RelatedTutorials\tensorflow-for-poets-2\tf_files\flower_photos\all
+C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_labels_svm.csv
+
+for BOTH:
+C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\test
+C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\kmeans_dict.yml
+C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\svm_model
 */
 
 /*
@@ -34,9 +38,9 @@ std::wstring model_path = L"C:\\Users\\ap\\Documents\\Projects\\Programs\\AI\\SV
 *     3. [string] the path to/for the generated vocabulary file
 *     4. [string] the path to/for the generated svm model file
 *
-* sample arg 1:
-* sample arg 2: 2 C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_svm_temp C:\Users\ap\Documents\Projects\AI\resources\SVMImageClassifier\train_labels_svm_temp.csv C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\kmeans_dict.yml C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\svm_model
-* sample arg 3:
+* sample arg 1: 1 C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_dict_temp C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\kmeans_dict_pending.yml
+* sample arg 2: 2 C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_svm_temp C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\train_labels_svm_temp.csv C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\kmeans_dict.yml C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\svm_model
+* sample arg 3: 3 C:\Users\ap\Documents\Projects\Programs\AI\resources\SVMImageClassifier\test C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\kmeans_dict.yml C:\Users\ap\Documents\Projects\Programs\AI\SVMImageClassifier\svm_model
 */
 int main(int argc, char *argv[])
 {
@@ -125,8 +129,8 @@ int main(int argc, char *argv[])
             std::string dict_path = argv[3];
             std::string model_path = argv[4];
 
-            // Mode 2: SVM training
-            // make call to SVM_mgr to run SVM training
+            // Mode 3: prediction
+            // make call to SVM_mgr to predict image classes
             std::wcout << L"\nRunning classification procedure...\n";
             std::vector<double> classes = classifyImages(test_data_path, dict_path, model_path);
             if (classes.empty()) {
@@ -134,15 +138,53 @@ int main(int argc, char *argv[])
                 return -1;
             }
 
-            std::wcout << L"NOTE: 1 = tennis ball detected, 0 = not\n";
+            std::wcout << L"NOTE: 0 = daisy, 1 = dandelion, 2 = rose, 3 = sunflower, 4 = tulip\n";
             std::wcout << L"SVM image classification completed with the following identifications:\n";
-            int count = 0;
+            int daisy_count = 0;
+            int dandelion_count = 0;
+            int rose_count = 0;
+            int sunflower_count = 0;
+            int tulip_count = 0;
             for (int i = 0; i < classes.size(); i++) {
-                std::wcout << L"image " << i+1 << L": " << classes[i] << L"\n";
-                if (1.0 == classes[i]) count++;
+                int detected_class = (int)(classes[i] + 0.5);
+                std::wcout << L"image " << i+1 << L": " << detected_class << L"\n";
+                switch (detected_class) {
+                    case 0:
+                    {
+                        daisy_count++;
+                        break;
+                    }
+                    case 1:
+                    {
+                        dandelion_count++;
+                        break;
+                    }
+                    case 2:
+                    {
+                        rose_count++;
+                        break;
+                    }
+                    case 3:
+                    {
+                        sunflower_count++;
+                        break;
+                    }
+                    case 4:
+                    {
+                        tulip_count++;
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                }
             }
-            std::wcout << L"Overall tennis ball images identified: " << count << L"\n";
-            std::wcout << L"Overall tennis ball identification fraction: " << ((static_cast<double>(count) / static_cast<double>(classes.size())) * 100) << L"\n";
+            std::wcout << L"Overall daisy images identified: " << daisy_count << L"\n";
+            std::wcout << L"Overall dandelion images identified: " << dandelion_count << L"\n";
+            std::wcout << L"Overall rose images identified: " << rose_count << L"\n";
+            std::wcout << L"Overall sunflower images identified: " << sunflower_count << L"\n";
+            std::wcout << L"Overall tulip images identified: " << tulip_count << L"\n";
 
             break;
             } 
